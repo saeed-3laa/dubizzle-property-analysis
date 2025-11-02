@@ -1,111 +1,115 @@
-# Dubizzle Property Analysis
+# Dubizzle Property Price Prediction & Analytics Dashboard
 
-The project involves web scraping, cleaning, analyzing, visualizing, and storing real estate data from Dubizzle Egypt, with an interactive Streamlit web application to present the findings.
+## Overview
+This project analyzes real estate listings scraped from Dubizzle (Egypt's leading classifieds platform) for apartments and duplexes for sale. It includes a web scraping pipeline, exploratory data analysis (EDA), machine learning models for price prediction, a Power BI dashboard for visualization, and a Streamlit web app for interactive price predictions. The dataset covers ~5K ads with details like price, area, bedrooms, bathrooms, location, amenities, and more. Key insights reveal trends in pricing (avg $7.58M EGP), furnished properties (6.54%), and high-demand areas like Madinaty and Hurghada.
 
-## Project Overview
+The project empowers users to explore market trends, predict property prices, and visualize distributions across cities, property types, and amenities. Built with Python for scraping/EDA/ML and Power BI for dashboards.
 
-The project extracts data on apartments and duplexes for sale from Dubizzle Egypt, cleans and processes it using regular expressions, analyzes trends and relationships, visualizes insights, and stores the data in MongoDB. A Streamlit app provides interactive exploration of the data, including filters, charts, price prediction, and market insights.
+Key Highlights:
+- **Total Ads**: 5K
+- **Avg Price**: $7.58M EGP
+- **Avg Area**: 166 sqm
+- **Price per sqm**: $45.7K EGP
+- **Furnished %**: 6.54%
+- **Top Property Type**: Apartment (4.25K ads)
+- **Best Model (R²)**: Gradient Boosting (0.99)
 
-## Deliverables
+## Data Source
+- **Scraping**: Python script using `requests` and `BeautifulSoup` to collect ~5K unique listings from [Dubizzle Apartments for Sale](https://www.dubizzle.com.eg/en/properties/apartments-duplex-for-sale/).
+- **Columns**: link, title, price, down_payment, location (city/area_name), creation_date, property_type, ownership, area, bedrooms, bathrooms, furnished, level, payment_option, completion_status, amenities, ad_id, seller_type, seller_name, seller_member_since.
+- **Data Prep**: Cleaned with pandas (regex for numerics, date parsing, null filling via groupby means/modes); feature engineering (amenities flags like has_garden, price_per_sqm); saved as `Dubizzle_properties_cleaned.csv`.
+- **Total Records**: 4,966 (after deduping/cleaning).
+- **Sample Data** (first few rows):
+  | link | title | price | down_payment | location | creation_date | property_type | ... |
+  |------|-------|-------|--------------|----------|---------------|---------------|-----|
+  | https://... | Spacious 3BR in Madinaty | 7500000 | 0 | Madinaty, Cairo | 2025-08-15 | Apartment | ... |
+  | https://... | Luxury Duplex Hurghada | 11500000 | 1720000 | Hurghada, Red Sea | 2025-08-14 | Duplex | ... |
 
-- `Dubizzel_Scrabbing.ipynb`: Script for web scraping using `requests` and `BeautifulSoup`.
-- `Dubizzel_Analysis.ipynb`: Script for data cleaning, analysis, and visualization.
-- `app.py`: Streamlit web application for interactive data exploration.
-- `report`: Final project report summarizing methodology and findings.
-- `requirements.txt`: List of Python dependencies.
+- **Challenges**: Handled 403 errors, duplicates, and "Not Available" values; rate-limited requests.
 
-## Setup Instructions
+## EDA Highlights
+- **Distributions**: Prices skewed high (median ~$5M); most properties unfurnished (93.46%); Apartments dominate (85.7%).
+- **Correlations**: Strong positive corr between price/area (0.85), bedrooms (0.72), bathrooms (0.68).
+- **Trends**: Ads peak mid-week; top areas: Madinaty (321 ads), Hurghada (180); avg down payment highest for Duplex ($1.72M).
+- **Visuals**: Histograms (price), boxplots (price by type), heatmaps (rooms vs. type), scatterplots (price vs. amenities), pie charts (ownership: Primary 78.5%).
 
-1. **Clone the Repository**:
+## Modeling
+- **Target**: Predict `price` (log-transformed for normality).
+- **Features**: 20+ (categorical: property_type, city; numeric: area, bedrooms; binary: has_pool, etc.).
+- **Preprocessing**: OneHotEncoder for cats, StandardScaler for nums; VIF checked (no multicollinearity >5).
+- **Train/Test Split**: 75/25 stratified by property_type.
+- **Models Evaluated** (R² on test):
+  - Linear Regression: 0.82 (MAE: ~1.2M EGP)
+  - Random Forest: 0.95 (MAE: ~450K EGP)
+  - **Gradient Boosting**: 0.99 (MAE: 167K EGP, RMSE: 485K EGP) – Best performer
+  - XGBoost: 0.98 (MAE: ~200K EGP)
+  - LightGBM: 0.97 (MAE: ~300K EGP)
+- **Feature Importance**: Area (0.35), bedrooms (0.22), location_encoded (0.15), bathrooms (0.12).
+- **Metrics**: Cross-val R² (0.99 ± 0.002); residuals normal (Shapiro p<0.05, but Q-Q plots confirm usability).
+- **Saved Models**: `.pkl` files for each; enhanced data in `Dubizzle_properties_enhanced.csv`.
 
-   ```bash
-   git clone https://github.com/saeed-3laa/dubizzle-property-analysis.git
-   cd dubizzle-property-analysis
-   ```
+## Dashboard
+Power BI dashboard with 5 pages visualizing KPIs, distributions, and trends:
+- **Overview**: Total Ads (5K), Avg Price ($7.58M), Furnished % (6.54%); daily ads line chart.
+- **Price Analysis**: Avg price by city/type (Gouna: $20M); down payment bars.
+- **Property Breakdown**: Ads by type (Apartment: 4.25K); amenities matrix.
+- **Location Insights**: Ads by area (Madinaty: 321); price by level (Highest: $10.7M).
+- **Filters**: City, type, payment, amenities; interactive slicers.
 
-2. **Install Dependencies**:
+## Streamlit App
+Interactive web app for price prediction:
+- **Features**: Input form for area, bedrooms, city, amenities checkboxes; uses Gradient Boosting model.
+- **Output**: Predicted price (EGP), city range comparison, bar chart.
+- **Run**: `streamlit run app.py` – Displays metrics table and warnings for outliers.
+- **UI**: Custom CSS for modern look; wide layout.
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+## Dashboard Screenshots
+Replace placeholders with actual image paths (e.g., `images/screenshot1.png`) when uploading to GitHub.
 
-3. **Install MongoDB**:
+### 1. Power BI Overview - KPIs & Daily Ads
+![Overview - Total Ads, Avg Price, Distributions](images/screenshot1.png)
 
-   - Download and install MongoDB: https://www.mongodb.com/docs/manual/installation/
-   - Start MongoDB:
-     - On Windows: `net start MongoDB`
-     - On Linux/macOS: `mongod`
+### 2. Price by City & Type
+![Price Analysis - Avg Price, Down Payment](images/screenshot2.png)
 
-4. **Run the Scripts**:
+### 3. Property Type & Amenities
+![Property Breakdown - Ads by Type, Amenities](images/screenshot3.png)
 
-   - Scrape data:
+### 4. Location & Level Pricing
+![Location Insights - Ads by Area, Price by Level](images/screenshot4.png)
 
-     ```bash
-     python -m notebook Dubizzel_Scrabbing.ipynb
-     ```
+### 5. Tree Map
+![Streamlit App - Input Form & Output](images/screenshot5.png)
 
-     (Outputs `Dubizzle_properties.csv`).
+## Key Insights
+- **Pricing**: Duplex/Penthouse premium (avg $11M+); unfurnished cheaper by 20%.
+- **Demand**: 5th Settlement (577 ads); Ready status (73.4% of listings).
+- **Amenities Impact**: +Garden/Pool boosts price 15-25%; Balcony/Parking essential for Apartments.
+- **ML Value**: Models predict within ±167K EGP (1.5% error); area/location drive 50% variance.
+- **Recommendations**: Target Madinaty for volume; promote furnished in high-end areas for 10% uplift.
 
-   - Run analysis:
+## How to Run
+1. **Prerequisites**: Python 3.10+, Power BI Desktop, pip install -r requirements.txt (pandas, numpy, scikit-learn, xgboost, lightgbm, streamlit, plotly, wordcloud, etc.).
+2. **Scraping/EDA**:
+   - Run `scraper.py` for raw data.
+   - Run `eda.py` for cleaning/visuals (outputs plots & cleaned CSV).
+3. **Modeling**:
+   - Run `modeling.py` to train/save models (outputs .pkl & comparison plots).
+4. **Dashboard**:
+   - Open `Dubizzle_Dashboard.pbix` in Power BI; refresh with cleaned CSV.
+5. **App**:
+   - `streamlit run app.py` – Predict prices interactively.
+6. **Publish**: Upload PBIX to Power BI Service; host Streamlit on Streamlit Cloud.
 
-     ```bash
-     python -m notebook Dubizzel_Analysis.ipynb
-     ```
+## Tech Stack
+- **Scraping/EDA/ML**: Python (pandas, numpy, scikit-learn, matplotlib, seaborn, plotly, xgboost, lightgbm)
+- **Dashboard**: Power BI Desktop (DAX measures, slicers, visuals)
+- **App**: Streamlit (forms, predictions, Plotly charts)
+- **Other**: BeautifulSoup (scraping), WordCloud (seller names), regex (cleaning)
 
-     (Generates visualizations and stores data in MongoDB).
+## Future Enhancements
+- Real-time scraping with Selenium for anti-bot.
+- Advanced ML: Neural nets (TensorFlow) or ensemble stacking.
+- Geospatial maps in Power BI; Arabic NLP for titles.
+- API endpoint for predictions.
 
-   - Run Streamlit app:
-
-     ```bash
-     streamlit run app.py
-     ```
-
-     (Opens in browser).
-
-## Requirements
-
-- Python 3.8+
-- MongoDB (local instance)
-- Libraries (listed in `requirements.txt`):
-  - `requests`
-  - `beautifulsoup4`
-  - `pandas`
-  - `numpy`
-  - `matplotlib`
-  - `seaborn`
-  - `plotly`
-  - `streamlit`
-  - `pymongo`
-  - `scikit-learn`
-  - `wordcloud`
-  - `arabic-reshaper`
-
-## Project Structure
-
-```
-dubizzle-property-analysis/
-├── Dubizzel_Scrabbing.ipynb    # Web scraping script
-├── Dubizzel_Analysis.ipynb     # Data cleaning, analysis, and visualization
-├── app.py                      # Streamlit web app
-├── report                   # Final project report
-├── requirements.txt            # Python dependencies
-├── README.md                   # Project overview and setup
-```
-
-## Key Findings
-
-- **Total Listings**: 4966 apartments and duplexes.
-- **Average Price**: \~EGP 7,562,613.
-- **Top Areas**: Madinaty, New Cairo, 6th of October.
-- **Most Common Property Type**: Apartment (\~80%).
-- **Price Drivers**: Area, bedrooms, and location (via RandomForestRegressor).
-
-## Notes
-
-- Ensure `Dubizzle_properties.csv` is generated by running `Dubizzel_Scrabbing.ipynb` before using `Dubizzel_Analysis.ipynb` or `app.py`.
-- Update `report.md` with exact findings (e.g., most expensive area) after running the Streamlit app.
-- The Streamlit app can be deployed to Streamlit Cloud for public access (optional).
-
-## License
-
-This project is for educational purposes and licensed under the MIT License.
